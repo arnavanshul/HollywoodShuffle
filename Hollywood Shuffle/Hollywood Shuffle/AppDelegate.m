@@ -57,12 +57,15 @@
     
     [[UIApplication sharedApplication] setStatusBarHidden:YES];
     
-    if([self connectedToInternet] && [all52Cards count] == 0)
+    if([self connectedToInternet])
     {
-        [self getAllActors];
+        if([all52Cards count] == 0)
+        {
+            [self getAllActors];
+        }
     }else
     {
-        UIAlertView *noInternet = [[UIAlertView alloc] initWithTitle:@"NOT CONNNECTED TO INTERNET" message:@"You have to be connected to internet to play this game!!!" delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
+        UIAlertView *noInternet = [[UIAlertView alloc] initWithTitle:@"NOT CONNECTED TO INTERNET" message:@"You have to be connected to internet to play this game!!!" delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
         [noInternet show];
     }
 }
