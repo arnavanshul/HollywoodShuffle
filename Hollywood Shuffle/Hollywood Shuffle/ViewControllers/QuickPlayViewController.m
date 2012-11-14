@@ -948,6 +948,8 @@
                 
                 turnIndicator.text = @"Opponent's Turn";
                 NSLog(@"Send Turn, %@, %@", currentMatchData, nextParticipant);
+                
+                myCardCount.text = [NSString stringWithFormat:@"%d cards", [myPlayer.playerCardList count]];
             }
         }
     }else
