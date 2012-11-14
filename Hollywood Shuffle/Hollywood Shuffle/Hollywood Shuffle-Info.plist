@@ -76,12 +76,6 @@
 	<array>
 		<string></string>
 	</array>
-	<key>UIMainStoryboardFile</key>
-	<string>MainStoryboard_iPhone</string>
-	<key>UIMainStoryboardFile~ipad</key>
-	<string>MainStoryboard_iPad_1</string>
-	<key>UIMainStoryboardFile~iphone</key>
-	<string>MainStoryboard_iPhone</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>armv7</string>

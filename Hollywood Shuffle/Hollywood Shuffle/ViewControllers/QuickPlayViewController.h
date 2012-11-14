@@ -11,10 +11,12 @@
 #import "GCTurnBasedMatchHelper.h"
 
 @class ActorObject, QuickPlayMatchObject, PlayerObject, AppDelegate;
-@interface QuickPlayViewController : UIViewController <UITableViewDataSource, UITableViewDelegate, UIGestureRecognizerDelegate, GCTurnBasedMatchHelperDelegate, UIAlertViewDelegate>
+@interface QuickPlayViewController : UIViewController <UIGestureRecognizerDelegate, GCTurnBasedMatchHelperDelegate, UIAlertViewDelegate>
 
 {
     NSInteger selectedRow, selectedCardNum;
+    NSInteger CARD_HEIGHT, CARD_WIDTH, REEL_WIDTH, REEL_HEIGHT, HAND_SCALE_FACTOR;
+    
     BOOL settingsShowing, castMovieViewShowing;
     
     NSMutableArray *cardsInHand, *cardsOnReel, *cardsPlacedThisHand;
@@ -31,8 +33,9 @@
     
     UIView *settingsView, *castMovieView, *myPlayerView, *otherPlayerView;
     UIScrollView *handCardListView, *filmReelListView;
-    UITableView *actorTable;
     UIImageView *actorNameBg, *settingsBg;
+    //UIImageView *bgView, *deckStack;
+    UIImageView *myPlayerImage, *otherPlayerImage;
     UILabel *actorNameLabel, *turnIndicator;
     UILabel *myCardCount, *otherCardCount, *myPointCount, *otherPointCount;
     UITextField *movieName;

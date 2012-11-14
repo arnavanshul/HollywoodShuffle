@@ -1,4 +1,4 @@
-//
+    //
 //  AppDelegate.m
 //  Hollywood Shuffle
 //
@@ -12,19 +12,44 @@
 #import "ActorObject.h"
 #import "LoginScreenViewController.h"
 #import "Reachability.h"
-
+#import "MyNavigationController.h"
 
 @implementation AppDelegate
-@synthesize all52Cards;
+@synthesize all52Cards, deviceType;
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+    
     // Override point for customization after application launch.
     [[UIApplication sharedApplication] setStatusBarHidden:YES];
+    
+    if([[[UIDevice currentDevice] name] rangeOfString:@"iPad"].location != NSNotFound)
+    //if([[[UIDevice currentDevice] name] isEqualToString:@"iPad Simulator"])
+    {
+        deviceType = IPAD;
+    }else
+    {
+        deviceType = IPHONE;
+    }
     
     all52Cards = [[NSMutableDictionary alloc] init];
     
     [[GCTurnBasedMatchHelper sharedInstance] authenticateLocalUser];
+    
+    self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+    //MyNavigationController *navController = (MyNavigationController *)[[UINavigationController alloc] init];
+    
+    LoginScreenViewController *lg = [[LoginScreenViewController alloc] init];
+    
+    //[navController pushViewController:lg animated:YES];
+    
+    MyNavigationController *navController = [[MyNavigationController alloc] initWithRootViewController:lg];
+    
+    navController.navigationBarHidden = YES;
+    NSLog(@"%@", [navController viewControllers]);
+    
+    [self.window setRootViewController:navController];
+    [self.window makeKeyAndVisible];
     
     return YES;
 }
@@ -77,9 +102,18 @@
     [[UIApplication sharedApplication] setStatusBarHidden:NO];
 }
 
-- (NSUInteger)application:(UIApplication *)application supportedInterfaceOrientationsForWindow:(UIWindow *)window
-{
-    return UIInterfaceOrientationMaskLandscape;
+- (NSUInteger)application:(UIApplication *)application supportedInterfaceOrientationsForWindow:(UIWindow *)window{
+    NSLog(@"supportedInterfaceOrientationsForWindow");
+    //return  UIInterfaceOrientationMaskLandscape;
+    //return  UIInterfaceOrientationMaskAllButUpsideDown;
+    
+    if([[GCTurnBasedMatchHelper sharedInstance] isLocalPlayerAuthenticated])
+    {
+        return UIInterfaceOrientationMaskLandscape;
+    }else
+    {
+        return UIInterfaceOrientationMaskAllButUpsideDown;
+    }
 }
 
 - (void) getAllActors
@@ -97,7 +131,6 @@
             ActorObject *tempActor = [[ActorObject alloc] init];
             tempActor.actorId = [[actorDict objectForKey:@"actor_id"] integerValue];
             [tempActor.actorName setString: [actorDict objectForKey:@"actor_name"]];
-            NSLog(@"%@", tempActor.actorImageView);
             tempActor.actorImageView.image = [UIImage imageNamed:[NSString stringWithFormat:@"%d.jpg", tempActor.actorId]];
             
             [all52Cards setObject:tempActor forKey:[NSNumber numberWithInteger: tempActor.actorId]];

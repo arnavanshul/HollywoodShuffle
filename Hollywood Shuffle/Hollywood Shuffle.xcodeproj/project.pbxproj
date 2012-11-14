@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		AF61ED58163F2D2900E54950 /* Reachability.m in Sources */ = {isa = PBXBuildFile; fileRef = AF61ED57163F2D2900E54950 /* Reachability.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		AF61ED5B163F2D3900E54950 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF61ED5A163F2D3900E54950 /* SystemConfiguration.framework */; };
+		AF693778164AF1A300B326BE /* MyNavigationController.m in Sources */ = {isa = PBXBuildFile; fileRef = AF693777164AF1A300B326BE /* MyNavigationController.m */; };
 		AF74CCDD163A6FE8008DF80C /* GameKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF74CCDC163A6FE8008DF80C /* GameKit.framework */; };
 		AF74CCDF163A6FEF008DF80C /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF74CCDE163A6FEF008DF80C /* QuartzCore.framework */; };
 		AF74CCE1163A711E008DF80C /* DINENGSCHRIFT-ALTERNATE-REGULAR_1.TTF in Resources */ = {isa = PBXBuildFile; fileRef = AF74CCE0163A711E008DF80C /* DINENGSCHRIFT-ALTERNATE-REGULAR_1.TTF */; };
@@ -140,6 +141,8 @@
 		AF61ED56163F2D2900E54950 /* Reachability.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Reachability.h; sourceTree = "<group>"; };
 		AF61ED57163F2D2900E54950 /* Reachability.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Reachability.m; sourceTree = "<group>"; };
 		AF61ED5A163F2D3900E54950 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
+		AF693776164AF1A300B326BE /* MyNavigationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MyNavigationController.h; path = ViewControllers/MyNavigationController.h; sourceTree = "<group>"; };
+		AF693777164AF1A300B326BE /* MyNavigationController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = MyNavigationController.m; path = ViewControllers/MyNavigationController.m; sourceTree = "<group>"; };
 		AF74CCDC163A6FE8008DF80C /* GameKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameKit.framework; path = System/Library/Frameworks/GameKit.framework; sourceTree = SDKROOT; };
 		AF74CCDE163A6FEF008DF80C /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		AF74CCE0163A711E008DF80C /* DINENGSCHRIFT-ALTERNATE-REGULAR_1.TTF */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DINENGSCHRIFT-ALTERNATE-REGULAR_1.TTF"; sourceTree = "<group>"; };
@@ -413,6 +416,8 @@
 		AF8CCAC4163A6BD30053A9EE /* ViewControllers */ = {
 			isa = PBXGroup;
 			children = (
+				AF693776164AF1A300B326BE /* MyNavigationController.h */,
+				AF693777164AF1A300B326BE /* MyNavigationController.m */,
 				AF8CCB90163A6CD30053A9EE /* LoadingScreenViewController.h */,
 				AF8CCB91163A6CD30053A9EE /* LoadingScreenViewController.m */,
 				AF8CCB92163A6CD30053A9EE /* LoginScreenViewController.h */,
@@ -716,6 +721,7 @@
 				AF8CCB9D163A6CD30053A9EE /* StandardPlayViewController.m in Sources */,
 				AF8CCB9E163A6CD30053A9EE /* StartpageViewController.m in Sources */,
 				AF61ED58163F2D2900E54950 /* Reachability.m in Sources */,
+				AF693778164AF1A300B326BE /* MyNavigationController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

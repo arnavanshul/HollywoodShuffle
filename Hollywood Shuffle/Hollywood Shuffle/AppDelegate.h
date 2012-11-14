@@ -9,12 +9,21 @@
 #import <UIKit/UIKit.h>
 
 @class Reachability;
+
+typedef enum deviceTypes
+{
+    IPHONE,
+    IPAD
+} DeviceType;
+
 @interface AppDelegate : UIResponder <UIApplicationDelegate>
 {
     NSMutableDictionary *all52Cards;
     Reachability *internetReachable, *hostReachable;
+    DeviceType deviceType;
 }
 @property (strong, nonatomic) UIWindow *window;
 @property (nonatomic, retain) NSMutableDictionary *all52Cards;
+@property (nonatomic, assign) DeviceType deviceType;
 -(BOOL) connectedToInternet;
 @end

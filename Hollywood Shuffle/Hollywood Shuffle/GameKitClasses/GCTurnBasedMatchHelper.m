@@ -10,6 +10,7 @@
 #import "QuickPlayViewController.h"
 #import "StandardPlayViewController.h"
 #include <GameKit/GameKit.h>
+#include "AppDelegate.h"
 
 @implementation GCTurnBasedMatchHelper
 
@@ -32,7 +33,7 @@ static GCTurnBasedMatchHelper *sharedHelper = nil;
     Class gcClass = (NSClassFromString(@"GKLocalPlayer"));
     
     // check if the device is running iOS 4.1 or later
-    NSString *reqSysVer = @"4.1";
+    NSString *reqSysVer = @"5.0";
     NSString *currSysVer = [[UIDevice currentDevice] systemVersion];
     BOOL osVersionSupported = ([currSysVer compare:reqSysVer options:NSNumericSearch] != NSOrderedAscending);
     
@@ -54,8 +55,22 @@ static GCTurnBasedMatchHelper *sharedHelper = nil;
     return self;
 }
 
+- (BOOL) isLocalPlayerAuthenticated
+{
+    if ([GKLocalPlayer localPlayer].isAuthenticated)
+    {
+        return true;
+    }else
+    {
+        return false;
+    }
+}
+
 - (void)authenticationChanged
 {
+    NSLog(@"local player is authenticated %d", [GKLocalPlayer localPlayer].isAuthenticated);
+    NSLog(@"local variable is authenticated. %d", userAuthenticated);
+    
     if ([GKLocalPlayer localPlayer].isAuthenticated && !userAuthenticated)
     {
         NSLog(@"Authentication changed: player authenticated.");
@@ -65,7 +80,16 @@ static GCTurnBasedMatchHelper *sharedHelper = nil;
     {
         NSLog(@"Authentication changed: player not authenticated");
         userAuthenticated = FALSE;
-    }
+    }/*else if (![GKLocalPlayer localPlayer].isAuthenticated)
+    {
+        void (^setGKEventHandlerDelegate)(NSError *) = ^ (NSError *error)
+        {
+            NSLog(@"%@", error);
+            GKTurnBasedEventHandler *ev = [GKTurnBasedEventHandler sharedTurnBasedEventHandler];
+            ev.delegate = self;
+        };
+        [[GKLocalPlayer localPlayer] authenticateWithCompletionHandler: setGKEventHandlerDelegate];
+    }*/
 }
 
 - (void)authenticateLocalUser
@@ -77,33 +101,41 @@ static GCTurnBasedMatchHelper *sharedHelper = nil;
     
     void (^setGKEventHandlerDelegate)(NSError *) = ^ (NSError *error)
     {
-        NSLog(@"%@", error);
+        NSLog(@"in set gk event handler %@", error);
         GKTurnBasedEventHandler *ev = [GKTurnBasedEventHandler sharedTurnBasedEventHandler];
         ev.delegate = self;
     };
     
     if ([GKLocalPlayer localPlayer].authenticated == NO)
     {
-        //THE FOLLOWING CODE REMOVES ALL THE EXISTING GAMES AT START UP. HAS TO BE COMMENTED. PUT IN HERE FOR DEV STAGE PURPOSES.
-        
-        /*
-        [[GKLocalPlayer localPlayer] authenticateWithCompletionHandler:^(NSError *error)
-         {
-             [GKTurnBasedMatch loadMatchesWithCompletionHandler:^(NSArray *matches, NSError *error)
-              {
-                  for (GKTurnBasedMatch *match in matches)
-                  {
-                      NSLog(@"match id = %@", match.matchID);
-                      [match removeWithCompletionHandler:^(NSError *error)
-                      {
-                          NSLog(@"%@", error.localizedDescription);
-                      }];
-                  }
-              }];
-         }];
-         */
-        
-        [[GKLocalPlayer localPlayer] authenticateWithCompletionHandler: setGKEventHandlerDelegate];
+        if([[GKLocalPlayer localPlayer] respondsToSelector:@selector(authenticateWithCompletionHandler:)])
+        {
+            [[GKLocalPlayer localPlayer] authenticateWithCompletionHandler: setGKEventHandlerDelegate];
+            
+        }else
+        {
+            [[GKLocalPlayer localPlayer] setAuthenticateHandler:^(UIViewController *viewController, NSError *error)
+             {
+                 NSLog(@"%@", [error description]);
+                 if (viewController != nil)
+                 {
+                     //[self showAuthenticationDialogWhenReasonable: viewController];
+                     //AppDelegate *appDelegate = [[UIApplication sharedApplication] delegate];
+                     //[appDelegate.window.rootViewController presentModalViewController:viewController animated:true];
+                     NSLog(@"show authentication dialog");
+                     
+                 }else if ([GKLocalPlayer localPlayer].isAuthenticated)
+                 {
+                     //[self authenticatedPlayer: [GKLocalPlayer localPlayer]];
+                     NSLog(@"player authenticated");
+                     
+                 }else
+                 {
+                     //[self disableGameCenter];
+                     NSLog(@"disable game center");
+                 }
+             }];
+        }
     
     } else
     {
@@ -117,6 +149,27 @@ static GCTurnBasedMatchHelper *sharedHelper = nil;
     {
         return;
     }
+    
+    //THE FOLLOWING CODE REMOVES ALL THE EXISTING GAMES WITH DETERMINED RESULTS AT START UP.
+    
+    [[GKLocalPlayer localPlayer] authenticateWithCompletionHandler:^(NSError *error)
+     {
+         [GKTurnBasedMatch loadMatchesWithCompletionHandler:^(NSArray *matches, NSError *error)
+          {
+              for (GKTurnBasedMatch *match in matches)
+              {
+                  NSLog(@"match id = %@", match.matchID);
+                  NSLog(@"match status = %d", match.status);
+                  if (match.status != GKTurnBasedMatchOutcomeNone)
+                  {
+                      [match removeWithCompletionHandler:^(NSError *error)
+                       {
+                           NSLog(@"%@", error.localizedDescription);
+                       }];
+                  }
+              }
+          }];
+     }];
     
     presentingViewController = viewController;
     
@@ -278,6 +331,41 @@ static GCTurnBasedMatchHelper *sharedHelper = nil;
         }
     }
 }
+
+
+-(void)handleTurnEventForMatch:(GKTurnBasedMatch *)match didBecomeActive:(BOOL)didBecomeActive
+{
+    UIAlertView *ignoreDoubleTap = [[UIAlertView alloc] initWithTitle:@"Your turn now!!" message:nil delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
+    [ignoreDoubleTap show];
+    
+    NSLog(@"%@", match.participants);
+    
+    if ([match.matchID isEqualToString:currentMatch.matchID])
+    {
+        if ([match.currentParticipant.playerID isEqualToString:[GKLocalPlayer localPlayer].playerID])
+        {
+            // it's the current match and it's our turn now
+            self.currentMatch = match;
+            [delegate takeTurn:match];
+        } else
+        {
+            // it's the current match, but it's someone else's turn
+            self.currentMatch = match;
+            [delegate layoutMatch:match];
+        }
+    } else
+    {
+        if ([match.currentParticipant.playerID isEqualToString:[GKLocalPlayer localPlayer].playerID]) {
+            // it's not the current match and it's our turn now
+            [delegate sendNotice:@"It's your turn for another match" forMatch:match];
+        } else
+        {
+            // it's the not current match, and it's someone else's
+            // turn
+        }
+    }
+}
+
 
 -(void)handleMatchEnded:(GKTurnBasedMatch *)match {
     

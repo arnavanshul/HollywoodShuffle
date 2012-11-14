@@ -22,9 +22,16 @@
 
 #define CARD_WIDTH_PHONE 64
 #define CARD_HEIGHT_PHONE 90
-#define HAND_SCALE_FACTOR 1.1
-#define CARD_WIDTH_TAB 63
-#define CARD_HEIGHT_TAB 95
+#define REEL_WIDTH_PHONE 70
+#define REEL_HEIGHT_PHONE 121
+#define HAND_SCALE_FACTOR_PHONE 1.1
+
+#define CARD_WIDTH_TAB 128
+#define CARD_HEIGHT_TAB 180
+#define REEL_WIDTH_TAB 140
+#define REEL_HEIGHT_TAB 241
+#define HAND_SCALE_FACTOR_TAB 1.1
+
 #define TIMEOUT_INTERVAL 90
 
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
@@ -45,6 +52,22 @@
         appDelegate = (AppDelegate*)[[UIApplication sharedApplication] delegate];
         
         selectedRow = -1;
+        
+        if(appDelegate.deviceType == IPAD)
+        {
+            CARD_HEIGHT = CARD_HEIGHT_TAB;
+            CARD_WIDTH = CARD_WIDTH_TAB;
+            REEL_WIDTH = REEL_WIDTH_TAB;
+            REEL_HEIGHT = REEL_HEIGHT_TAB;
+            HAND_SCALE_FACTOR = HAND_SCALE_FACTOR_TAB;
+        }else
+        {
+            CARD_HEIGHT = CARD_HEIGHT_PHONE;
+            CARD_WIDTH = CARD_WIDTH_PHONE;
+            REEL_WIDTH = REEL_WIDTH_PHONE;
+            REEL_HEIGHT = REEL_HEIGHT_PHONE;
+            HAND_SCALE_FACTOR = HAND_SCALE_FACTOR_PHONE;
+        }
         
         cardsInHand = [[NSMutableArray alloc] init];
         cardsOnReel = [[NSMutableArray alloc] init];
@@ -68,7 +91,8 @@
         castButton.backgroundColor = [UIColor clearColor];
         [castButton addTarget:self action:@selector(castButtonClicked:) forControlEvents:UIControlEventTouchUpInside];
         
-        UIImageView *castBtnBg = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 82, 42)];
+        UIImageView *castBtnBg = [[UIImageView alloc] init];
+        castBtnBg.frame = CGRectMake(0, 0, castButton.frame.size.width, castButton.frame.size.height);
         castBtnBg.image = [UIImage imageNamed:@"cast.png"];
         
         [castButton addSubview:castBtnBg];
@@ -78,20 +102,21 @@
         drawButton.backgroundColor = [UIColor clearColor];
         [drawButton addTarget:self action:@selector(drawButtonClicked) forControlEvents:UIControlEventTouchUpInside];
         
-        UIImageView *drawBtnBg = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 82, 42)];
+        UIImageView *drawBtnBg = [[UIImageView alloc] init];
+        drawBtnBg.frame = CGRectMake(0, 0, drawButton.frame.size.width, drawButton.frame.size.height);
         drawBtnBg.image = [UIImage imageNamed:@"draw.png"];
         
         [drawButton addSubview:drawBtnBg];
         
         handCardListView = [[UIScrollView alloc] init];
-        handCardListView.contentSize = CGSizeMake(750, CARD_HEIGHT_PHONE);
+        handCardListView.contentSize = CGSizeMake(750, CARD_HEIGHT);
         handCardListView.backgroundColor = [UIColor clearColor];
         handCardListView.frame = CGRectMake(0, 215, 370, 100);
         [handCardListView addGestureRecognizer:handLongPressGestureRecognizer];
         handCardListView.canCancelContentTouches = NO;
         
         filmReelListView = [[UIScrollView alloc] init];
-        filmReelListView.contentSize = CGSizeMake((CARD_WIDTH_PHONE + 6) * 4, CARD_HEIGHT_PHONE + 30);
+        filmReelListView.contentSize = CGSizeMake((REEL_WIDTH) * 4, REEL_HEIGHT);
         filmReelListView.backgroundColor = [UIColor clearColor];
         [filmReelListView setIndicatorStyle:UIScrollViewIndicatorStyleWhite];
         filmReelListView.frame = CGRectMake(200, 95, 280, 120);
@@ -100,12 +125,10 @@
         
         settingsView = [[UIView alloc] initWithFrame:CGRectMake(420, 10, 260, 310)];
         settingsView.backgroundColor = [UIColor clearColor];
-        [self layoutSettingsView];
         settingsShowing = false;
         
         castMovieView = [[UIView alloc] initWithFrame:CGRectMake(36, 5, 408, 120)];
         castMovieView.backgroundColor = [UIColor clearColor];
-        [self layoutCastMovieView];
         castMovieView.hidden = true;
         //castMovieViewShowing = false;
         
@@ -129,15 +152,12 @@
         turnIndicator.font = [UIFont fontWithName:@"DINEngschrift-Alternate" size:13];
         turnIndicator.adjustsFontSizeToFitWidth = YES;
         
-        actorTable = [[UITableView alloc] initWithFrame:CGRectMake(0, 80, 80, 225) style:UITableViewStylePlain];
-        actorTable.scrollEnabled = TRUE;
-        actorTable.dataSource = self;
-        actorTable.delegate = self;
-        actorTable.backgroundColor = [UIColor clearColor];
-        actorTable.separatorStyle = UITableViewCellSeparatorStyleNone;
-        
         myPlayerView = [[UIView alloc]initWithFrame:CGRectMake(0, 20, 110, 90)];
         myPlayerView.backgroundColor = [UIColor clearColor];
+        
+        myPlayerImage = [[UIImageView alloc] init];
+        myPlayerImage.backgroundColor = [UIColor clearColor];
+        myPlayerImage.frame = CGRectMake(5, 5, 60, 60);
         
         myCardCount = [[UILabel alloc] initWithFrame:CGRectMake(45, 45, 60, 20)];
         myCardCount.backgroundColor = [UIColor clearColor];
@@ -153,9 +173,14 @@
         
         [myPlayerView addSubview: myCardCount];
         [myPlayerView addSubview: myPointCount];
+        [myPlayerView addSubview: myPlayerImage];
         
         otherPlayerView = [[UIView alloc] initWithFrame:CGRectMake(145, 0, 150, 90)];
         otherPlayerView.backgroundColor = [UIColor clearColor];
+        
+        otherPlayerImage = [[UIImageView alloc] init];
+        otherPlayerImage.backgroundColor = [UIColor clearColor];
+        otherPlayerImage.frame = CGRectMake(5, 5, 60, 60);
         
         otherCardCount = [[UILabel alloc] initWithFrame:CGRectMake(55, 5, 60, 20)];
         otherCardCount.backgroundColor = [UIColor clearColor];
@@ -171,6 +196,45 @@
         
         [otherPlayerView addSubview: otherCardCount];
         [otherPlayerView addSubview: otherPointCount];
+        [otherPlayerView addSubview: otherPlayerImage];
+        
+        if(appDelegate.deviceType == IPAD)
+        {
+            castButton.frame = CGRectMake(850, 119, 180, 60);
+            castBtnBg.frame = CGRectMake(0, 0, castButton.frame.size.width, castButton.frame.size.height);
+            drawButton.frame = CGRectMake(850, 180, 180, 60);
+            drawBtnBg.frame = CGRectMake(0, 0, drawButton.frame.size.width, drawButton.frame.size.height);
+            
+            handCardListView.frame = CGRectMake(0, 538, 1024, 200);
+            filmReelListView.frame = CGRectMake(353, 270, 500, 240);
+            //settingsView.frame = CGRectMake(950, 10, 260, 310);
+            settingsView.frame = CGRectMake(965, 10, 260, 310);
+            castMovieView.frame = CGRectMake(100, 10, 816, 240);
+            actorNameBg.frame = CGRectMake(0, 330, 220, 120);
+            actorNameLabel.frame = CGRectMake(5, 5, 210, 110);
+            actorNameLabel.font = [UIFont fontWithName:@"DINEngschrift-Alternate" size:25];
+            turnIndicator.frame = CGRectMake(70, 6, 140, 40);
+            turnIndicator.font = [UIFont fontWithName:@"DINEngschrift-Alternate" size:25];
+            
+            myPlayerView.frame = CGRectMake(10, 50, 180, 180);
+            myPlayerView.backgroundColor = [UIColor clearColor];
+            myPlayerImage.frame = CGRectMake(5, 5, 75, 75);
+            myCardCount.frame = CGRectMake(75, 90, 100, 30);
+            myCardCount.font = [UIFont fontWithName:@"DINEngschrift-Alternate" size:25];
+            myPointCount.frame = CGRectMake(75, 125, 100, 30);
+            myPointCount.font = [UIFont fontWithName:@"DINEngschrift-Alternate" size:25];
+            
+            otherPlayerView.frame = CGRectMake(350, 10, 180, 180);
+            otherPlayerView.backgroundColor = [UIColor clearColor];
+            otherPlayerImage.frame = CGRectMake(5, 5, 75, 75);
+            otherCardCount.frame = CGRectMake(75, 10, 100, 30);
+            otherCardCount.font = [UIFont fontWithName:@"DINEngschrift-Alternate" size:25];
+            otherPointCount.frame = CGRectMake(75, 45, 100, 30);
+            otherPointCount.font = [UIFont fontWithName:@"DINEngschrift-Alternate" size:25];
+        }
+        
+        [self layoutSettingsView];
+        [self layoutCastMovieView];
     }
     
     return  self;
@@ -188,6 +252,62 @@
     bgView.frame = CGRectMake(0, 0, 480, 320);
     bgView.image = [UIImage imageNamed:@"bg.png"];
     
+    GKTurnBasedMatch *currentMatch = [[GCTurnBasedMatchHelper sharedInstance] currentMatch];
+    NSArray *participants = [currentMatch participants];
+    NSMutableArray *playerIds = [[NSMutableArray alloc] init];
+    
+    for (GKTurnBasedParticipant *participant in participants)
+    {
+        if (participant.playerID)
+        {
+            [playerIds addObject: participant.playerID];
+        }
+    }
+    
+    [GKPlayer loadPlayersForIdentifiers:playerIds withCompletionHandler:^(NSArray *players, NSError *error)
+     {
+         if (error)
+         {
+             NSLog(@"%@: %@", error, [error description]);
+             
+         }else
+         {
+             for (GKPlayer *player in players)
+             {
+                 [player loadPhotoForSize:GKPhotoSizeSmall withCompletionHandler:^(UIImage *photo, NSError *error)
+                 {
+                     if (photo)
+                     {
+                         if([player.playerID isEqualToString:[[GKLocalPlayer localPlayer] playerID]])
+                         {
+                             myPlayerImage.image = photo;
+                             otherPlayerImage.image = photo;
+                         }else
+                         {
+                             otherPlayerImage.image = photo;
+                             myPlayerImage.image = photo;
+                         }
+                     }
+                 }];
+             }
+         }
+     }];
+    
+    //if([[[UIDevice currentDevice] name] isEqualToString:@"iPad Simulator"])
+    if (appDelegate.deviceType == IPAD)
+    {
+        //CGRect screenRect = [[UIScreen mainScreen] bounds];
+        bgView.frame = CGRectMake(0, 0, 1024, 768);
+        deckStack.frame = CGRectMake(230, 300, 128, 186);
+        //bgView.frame = CGRectMake(0, 0, screenRect.size.width, screenRect.size.height);
+        //castButton.frame = CGRectMake(800, 450, 250, 50);
+        //drawButton.frame = CGRectMake(800, 520, 250, 50);
+        //handCardListView.frame = CGRectMake(180, 420, 580, 220);
+        
+        //handCardListView.backgroundColor = [UIColor redColor];
+        //filmReelListView.backgroundColor = [UIColor blueColor];
+    }
+    
     [self.view addSubview: bgView];
     [self.view addSubview: deckStack];
     [self.view addSubview: filmReelListView];
@@ -201,16 +321,6 @@
     [self.view addSubview: myPlayerView];
     [self.view addSubview: otherPlayerView];
     
-    if([[[UIDevice currentDevice] name] isEqualToString:@"iPad Simulator"])
-    {
-        actorTable.frame = CGRectMake(0, 300, 150, 350);
-        castButton.frame = CGRectMake(800, 450, 250, 50);
-        drawButton.frame = CGRectMake(800, 520, 250, 50);
-        handCardListView.frame = CGRectMake(180, 420, 580, 220);
-        
-        [self.view addSubview: actorTable];
-    }
-    
     [self layoutHand];
 }
 
@@ -221,12 +331,15 @@
     actorNameBg.frame = CGRectMake(0, 140, 110, 40);
     [actorNameBg setHidden: FALSE];
      */
+    /*
+    NSLog(@"%d", [appDelegate connectedToInternet]);
     
     if(![appDelegate connectedToInternet])
     {
-        UIAlertView *noInternet = [[UIAlertView alloc] initWithTitle:@"NOT CONNNECTED TO INTERNET" message:@"You have to be connected to internet to play this game!!!" delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
+        UIAlertView *noInternet = [[UIAlertView alloc] initWithTitle:@"NOT CONNECTED TO INTERNET" message:@"You have to be connected to internet to play this game!!!" delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
         [noInternet show];
     }
+    */
 }
 
 
@@ -240,42 +353,63 @@
     [settingsButton addTarget:self action:@selector(settingsClicked) forControlEvents:UIControlEventTouchUpInside];
     settingsButton.frame = CGRectMake(0, 0, 60, 60);
     
+    /*
     UIButton *volumeButton = [UIButton buttonWithType:UIButtonTypeCustom];
     volumeButton.frame = CGRectMake(142, 15, 40, 30);
     [volumeButton setBackgroundImage:[UIImage imageNamed:@"sound.png"] forState:UIControlStateNormal];
     [volumeButton addTarget:self action:@selector(volumeButtonClicked) forControlEvents:UIControlEventTouchUpInside];
+    */
     
     UIButton *helpButton = [UIButton buttonWithType: UIButtonTypeCustom];
     helpButton.frame = CGRectMake(95, 75, 142, 40);
     [helpButton setBackgroundImage:[UIImage imageNamed:@"help.png"] forState:UIControlStateNormal];
     [helpButton addTarget:self action:@selector(helpButtonClicked) forControlEvents:UIControlEventTouchUpInside];
     
+    /*
     UIButton *settings2Button = [UIButton buttonWithType: UIButtonTypeCustom];
     settings2Button.frame = CGRectMake(95, 117, 142, 40);
     [settings2Button setBackgroundImage:[UIImage imageNamed:@"settings2.png"] forState:UIControlStateNormal];
     [settings2Button addTarget:self action:@selector(settings2ButtonClicked) forControlEvents:UIControlEventTouchUpInside];
+    */
     
-    UIButton *exitButton = [UIButton buttonWithType: UIButtonTypeCustom];
-    exitButton.frame = CGRectMake(95, 159, 142, 40);
+    UIButton *exitButton = [UIButton buttonWithType: UIButtonTypeCustom]; //exit to menu
+    //exitButton.frame = CGRectMake(95, 159, 142, 40);
+    exitButton.frame = CGRectMake(95, 139, 142, 40);
     [exitButton setBackgroundImage:[UIImage imageNamed:@"exit.png"] forState:UIControlStateNormal];
     [exitButton addTarget:self action:@selector(exitButtonClicked) forControlEvents:UIControlEventTouchUpInside];
     
-    UIButton *quitButton = [UIButton buttonWithType: UIButtonTypeCustom];
+    UIButton *quitButton = [UIButton buttonWithType: UIButtonTypeCustom]; // quits game
     quitButton.frame = CGRectMake(95, 201, 142, 40);
     [quitButton setBackgroundImage:[UIImage imageNamed:@"quit-game.png"] forState:UIControlStateNormal];
     [quitButton addTarget:self action:@selector(quitButtonClicked) forControlEvents:UIControlEventTouchUpInside];
     
+    /*
     UIImageView *frndsOnline = [[UIImageView alloc] initWithFrame:CGRectMake(95, 245, 142, 40)];
     frndsOnline.image = [UIImage imageNamed:@"friends.png"];
+    */
+    
+    if (appDelegate.deviceType == IPAD)
+    {
+        /*
+        settingsBg.frame = CGRectMake(0, 0, 0, 0);
+        settingsButton.frame = CGRectMake(0, 0, 0, 0);
+        volumeButton.frame = CGRectMake(0, 0, 0, 0);
+        helpButton.frame = CGRectMake(0, 0, 0, 0);
+        settingsButton.frame = CGRectMake(0, 0, 0, 0);
+        exitButton.frame = CGRectMake(0, 0, 0, 0);
+        quitButton.frame = CGRectMake(0, 0, 0, 0);
+        frndsOnline.frame = CGRectMake(0, 0, 0, 0);
+         */
+    }
     
     [settingsView addSubview: settingsBg];
     [settingsView addSubview: settingsButton];
-    [settingsView addSubview: volumeButton];
+    //[settingsView addSubview: volumeButton];
     [settingsView addSubview: helpButton];
-    [settingsView addSubview: settings2Button];
+    //[settingsView addSubview: settings2Button];
     [settingsView addSubview: exitButton];
     [settingsView addSubview: quitButton];
-    [settingsView addSubview: frndsOnline];
+    //[settingsView addSubview: frndsOnline];
 }
 
 
@@ -296,7 +430,15 @@
     [confirmCastMovieBtn setBackgroundImage:[UIImage imageNamed:@"cast_movie.png"] forState:UIControlStateNormal];
     
     movieName = [[UITextField alloc] initWithFrame: CGRectMake(22, 70, 250, 30)];
-    movieName.backgroundColor = [UIColor clearColor];
+    
+    if (appDelegate.deviceType == IPAD)
+    {
+        castMovieBg.frame = CGRectMake(0, 0, castMovieView.frame.size.width, castMovieView.frame.size.height);
+        hideCastMovieBtn.frame = CGRectMake(750, 15, 40, 40);
+        confirmCastMovieBtn.frame = CGRectMake(600, 130, 200, 70);
+        movieName.frame = CGRectMake(45, 140, 500, 50);
+        movieName.font = [UIFont systemFontOfSize: 35];
+    }
     
     [castMovieView addSubview: castMovieBg];
     [castMovieView addSubview: hideCastMovieBtn];
@@ -313,18 +455,18 @@
     }
     
     //ADDING IMAGES TO HAND
-    float tempWidth = (CARD_WIDTH_PHONE * HAND_SCALE_FACTOR);
+    float tempWidth = (CARD_WIDTH * HAND_SCALE_FACTOR);
     for (int i = 0; i < [cardsInHand count]; i++)
     {
         ActorObject *temp = [cardsInHand objectAtIndex: i];
         NSLog(@"card in hand object actor id %d",temp.actorId);
         UIImageView *view = temp.actorImageView;
-        view.frame = CGRectMake(i * tempWidth, 0, tempWidth, CARD_HEIGHT_PHONE * HAND_SCALE_FACTOR);
+        view.frame = CGRectMake(i * tempWidth, 0, tempWidth, CARD_HEIGHT * HAND_SCALE_FACTOR);
         [handCardListView addSubview: view];
         view.layer.borderColor = [UIColor blackColor].CGColor;
     }
 
-    handCardListView.contentSize = CGSizeMake(([cardsInHand count]) * tempWidth, CARD_HEIGHT_PHONE);
+    handCardListView.contentSize = CGSizeMake(([cardsInHand count]) * tempWidth, CARD_HEIGHT);
     
     //EMPTYING THE REEL SCROLLVIEW
     for (UIView *view in [filmReelListView subviews])
@@ -333,18 +475,21 @@
     }
     
     //ADDING IMAGES TO REEL
-    filmReelListView.contentSize = CGSizeMake(([cardsOnReel count] + 1) * 70, CARD_HEIGHT_PHONE);
+    filmReelListView.contentSize = CGSizeMake(([cardsOnReel count] + 1) * REEL_WIDTH, CARD_HEIGHT);
     
     int x = 0;
+    int xPosition = (REEL_WIDTH - CARD_WIDTH)/2;
+    int yPosition = (REEL_HEIGHT - CARD_HEIGHT)/2;
+    
     for (int i = 0; i < [cardsOnReel count]; i++)
     {
         ActorObject *temp = [cardsOnReel objectAtIndex: i];
         
-        UIImageView *cardBg = [[UIImageView alloc] initWithFrame:CGRectMake(x, 0, 70, 120)];
+        UIImageView *cardBg = [[UIImageView alloc] initWithFrame:CGRectMake(x, -1, REEL_WIDTH, REEL_HEIGHT)];
         cardBg.backgroundColor = [UIColor clearColor];
         cardBg.image = [UIImage imageNamed:@"reel_1.png"];
         
-        UIImageView *cardImage = [[UIImageView alloc] initWithFrame:CGRectMake(3, 15, CARD_WIDTH_PHONE, CARD_HEIGHT_PHONE)];
+        UIImageView *cardImage = [[UIImageView alloc] initWithFrame:CGRectMake(xPosition - 1, yPosition, CARD_WIDTH + 1, CARD_HEIGHT)];
         cardImage.image = temp.actorImageView.image;
         cardImage.layer.cornerRadius = 5;
         cardImage.layer.masksToBounds = YES;
@@ -354,7 +499,7 @@
         [cardBg addSubview:cardImage];
         [filmReelListView addSubview: cardBg];
         
-        x = x + 70;
+        x = x + REEL_WIDTH;
     }
     
     
@@ -386,7 +531,7 @@
     if ([cardsOnReel count] == 1)
     {
         UIImageView *crossReelImage = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"cross_reel_03.png"]];
-        crossReelImage.frame = CGRectMake(x, 0, 70, 120);
+        crossReelImage.frame = CGRectMake(x, 0, REEL_WIDTH, REEL_HEIGHT);
         [filmReelListView addSubview: crossReelImage];
         castButton.enabled = false;
     }else
@@ -403,7 +548,7 @@
     {
         CGPoint doubleTapLocation = [sender locationInView:filmReelListView];
         
-        selectedCardNum = doubleTapLocation.x/(CARD_WIDTH_PHONE + 6);
+        selectedCardNum = doubleTapLocation.x/(REEL_WIDTH);
         
         //create an array for the cards placed on the reel in this hand. the below logic is executed if
         //cardaddedtoreel is an object from that array...
@@ -437,20 +582,18 @@
             
             CGPoint longPressLocation = [sender locationInView:handCardListView];
             CGPoint locationOnScreen = [sender locationInView:self.view];
-            selectedCardNum = longPressLocation.x/(CARD_WIDTH_PHONE * HAND_SCALE_FACTOR);
+            selectedCardNum = longPressLocation.x/(CARD_WIDTH * HAND_SCALE_FACTOR);
             NSLog(@"selected card is = %d", selectedCardNum);
             if (selectedCardNum < [cardsInHand count])
             {
                 cardSelectedFromHand = [cardsInHand objectAtIndex:selectedCardNum];
                 
-                
-                //TO DO: WRITE AN OBJECT COPYING METHOD FOR ACTOR OBJECT. PROBLEM: IMAGE OR IMAGEVIEW DOES NOT HAVE A 
                 cardSelected = [cardSelectedFromHand copy];
                 cardSelected.actorImageView.frame = cardSelectedFromHand.actorImageView.frame;
                 
                 cardSelected.actorImageView.transform = CGAffineTransformScale(cardSelected.actorImageView.transform, 1.5, 1.5);
                 cardSelected.actorImageView.center = locationOnScreen;
-                cardSelected.actorImageView.center = CGPointMake(cardSelected.actorImageView.center.x, cardSelected.actorImageView.center.y - 60);
+                cardSelected.actorImageView.center = CGPointMake(cardSelected.actorImageView.center.x, cardSelected.actorImageView.center.y - CARD_HEIGHT/2);
                 cardSelected.actorImageView.layer.borderColor = [UIColor clearColor].CGColor;
                 actorNameLabel.text = cardSelected.actorName;
                 //[self animateShowName];
@@ -471,11 +614,11 @@
             break;
         case UIGestureRecognizerStateEnded:
             
-            NSLog(@"");
+            NSLog(@"%f", filmReelListView.frame.size.height);
             CGPoint temp = [sender locationInView:filmReelListView];
                         
-            if (temp.y > 0 && temp.y < 80 && temp.x > 0 && [[GCTurnBasedMatchHelper sharedInstance] isMyTurnforMatch: [[GCTurnBasedMatchHelper
-                                                                                                                        sharedInstance] currentMatch]])
+            if (temp.y > 0 && temp.y < filmReelListView.frame.size.height && temp.x > 0 && [[GCTurnBasedMatchHelper sharedInstance] isMyTurnforMatch:
+                                                                                            [[GCTurnBasedMatchHelper sharedInstance] currentMatch]])
             {
                 cardSelected.actorImageView.alpha = 1;
                 
@@ -548,7 +691,7 @@
     {
         CGPoint longPressLocation = [sender locationInView:filmReelListView];
         CGPoint locationOnScreen = [sender locationInView:self.view];
-        selectedCardNum = longPressLocation.x/(CARD_WIDTH_PHONE + 6);
+        selectedCardNum = longPressLocation.x/(REEL_WIDTH);
         NSLog(@"the selected card = %d", selectedCardNum);
         NSLog(@"card count on reel = %d", [cardsOnReel count]);
         if(selectedCardNum < [cardsOnReel count])
@@ -556,10 +699,10 @@
             ActorObject *cardSelectedOnReel = [cardsOnReel objectAtIndex:selectedCardNum];
             
             cardSelected = [cardSelectedOnReel copy];
-            cardSelected.actorImageView.frame = CGRectMake(0, 0, CARD_WIDTH_PHONE, CARD_HEIGHT_PHONE);
+            cardSelected.actorImageView.frame = CGRectMake(0, 0, CARD_WIDTH, CARD_HEIGHT);
             cardSelected.actorImageView.transform = CGAffineTransformScale(cardSelected.actorImageView.transform, 1.5, 1.5);
             cardSelected.actorImageView.center = locationOnScreen;
-            cardSelected.actorImageView.center = CGPointMake(cardSelected.actorImageView.center.x, cardSelected.actorImageView.center.y - 60);
+            cardSelected.actorImageView.center = CGPointMake(cardSelected.actorImageView.center.x, cardSelected.actorImageView.center.y - CARD_HEIGHT/2);
             cardSelected.actorImageView.layer.borderColor = [UIColor clearColor].CGColor;
             actorNameLabel.text = cardSelected.actorName;
             //[self animateShowName];
@@ -724,6 +867,18 @@
 {
     //draw button click event definition
     
+    for (ActorObject *temp in cardsPlacedThisHand)
+    {
+        [cardsInHand addObject:temp];
+    }
+    
+    for (int i = 1; i < [cardsOnReel count]; i++)
+    {
+        [cardsOnReel removeObjectAtIndex:i];
+    }
+    
+    [cardsPlacedThisHand removeAllObjects];
+    
     if ([[GCTurnBasedMatchHelper sharedInstance] isMyTurnforMatch:[[GCTurnBasedMatchHelper sharedInstance] currentMatch]])
     {
         if(castMovieView.hidden)
@@ -856,7 +1011,91 @@
 
 - (void) quitButtonClicked
 {
-    [self.navigationController popViewControllerAnimated:YES];
+    if([[GCTurnBasedMatchHelper sharedInstance] isMyTurnforMatch: [[GCTurnBasedMatchHelper sharedInstance] currentMatch]])
+    {
+        myPlayer.playerStatus = PLAYER_QUIT;
+        GKTurnBasedMatch *currentMatch = [[GCTurnBasedMatchHelper sharedInstance] currentMatch];
+        
+        [currentMatch.currentParticipant setMatchOutcome:GKTurnBasedMatchOutcomeQuit];
+        
+        NSMutableData *currentMatchData = [[NSMutableData alloc] initWithData:
+                                           [NSKeyedArchiver archivedDataWithRootObject:currentMatchObj]];
+        
+        GKTurnBasedParticipant *nextParticipant;
+        NSUInteger currentIndex = [currentMatch.participants indexOfObject:currentMatch.currentParticipant];
+        nextParticipant = [currentMatch.participants objectAtIndex:((currentIndex + 1) % [currentMatch.participants count])];
+        
+        
+        //Set the match outcome for all the participants...
+        for(GKTurnBasedParticipant *participant in currentMatch.participants)
+        {
+            participant.matchOutcome = GKTurnBasedMatchOutcomeWon;
+        }
+        
+        currentMatch.currentParticipant.matchOutcome = GKTurnBasedMatchOutcomeLost;
+        
+        [currentMatch endMatchInTurnWithMatchData:currentMatchData completionHandler:^(NSError *error)
+         {
+             if (error)
+             {
+                 //Have to look at it.... might be something due to scores not being reported to the game center leaderboard.
+                 
+                 NSLog(@"completion handler %@", error);
+             }
+             
+             NSLog(@"completion handler state of the match = %d", currentMatch.status);
+             
+             [currentMatch removeWithCompletionHandler:^(NSError *error)
+              {
+                  NSLog(@"%@", error);
+                  
+                  [self.navigationController popViewControllerAnimated:YES];
+              }];
+         }];
+        
+        /*
+        if([currentMatch respondsToSelector:@selector(endTurnWithNextParticipants:turnTimeout:matchData:completionHandler:)])
+        {
+            [currentMatch endTurnWithNextParticipants:[NSArray arrayWithObject:nextParticipant] turnTimeout:TIMEOUT_INTERVAL matchData:currentMatchData completionHandler:^(NSError *error) {
+                if (error)
+                {
+                    NSLog(@"%@", error);
+                }else
+                {
+                    [currentMatch removeWithCompletionHandler:^(NSError *error)
+                     {
+                         NSLog(@"%@", error);
+                         
+                         [self.navigationController popViewControllerAnimated:YES];
+                     }];
+                }
+            }];
+        }else
+        {
+            [currentMatch endTurnWithNextParticipant:nextParticipant matchData:currentMatchData completionHandler:^(NSError *error)
+             {
+                 if (error)
+                 {
+                     NSLog(@"%@", error);
+                     
+                     [currentMatch removeWithCompletionHandler:^(NSError *error)
+                      {
+                          NSLog(@"%@", error.localizedDescription);
+                          
+                          [self.navigationController popViewControllerAnimated:YES];
+                      }];
+                 }
+             }];
+        }
+        
+        */
+        
+    }else
+    {
+        UIAlertView *av = [[UIAlertView alloc] initWithTitle:nil message: @"You can only quit if it is your turn"
+                                                    delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
+        [av show];
+    }
 }
 
 - (void) animateShowName
@@ -1046,6 +1285,14 @@
     
     currentMatchObj = [NSKeyedUnarchiver unarchiveObjectWithData: match.matchData];
     
+    for (GKTurnBasedParticipant *participant in match.participants)
+    {
+        if(participant.matchOutcome == GKTurnBasedMatchOutcomeQuit)
+        {
+            [[currentMatchObj.playersList objectForKey:participant.playerID] setPlayerStatus:PLAYER_QUIT];
+        }
+    }
+    
     deckCards = currentMatchObj.deckCardList;
     
     if([currentMatchObj.playersList objectForKey: match.currentParticipant.playerID])
@@ -1222,7 +1469,7 @@
                 
                 [myPlayer setPlayerStatus: PLAYER_WON];
                 
-                [match participantQuitInTurnWithOutcome:GKTurnBasedMatchOutcomeWon nextParticipant:nil matchData:match.matchData completionHandler:nil];
+                //[match participantQuitInTurnWithOutcome:GKTurnBasedMatchOutcomeWon nextParticipant:nil matchData:match.matchData completionHandler:nil];
             }
         }
     }
@@ -1242,6 +1489,7 @@
         
         UIAlertView *av;
         
+        /*
         if(myPlayer.playerStatus == PLAYER_WON)
         {
             av = [[UIAlertView alloc] initWithTitle: @"Game Alert !" message: @"You Won!!!" delegate:self cancelButtonTitle:@"Sweet!" otherButtonTitles:nil];
@@ -1249,6 +1497,7 @@
         {
             av = [[UIAlertView alloc] initWithTitle: @"Game Alert !" message: @"You lost!!!" delegate:self cancelButtonTitle:@"Fight another day..." otherButtonTitles:nil];
         }
+         */
         
         av.tag = 1;
         [av show];
@@ -1319,72 +1568,6 @@
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
 {
     return (interfaceOrientation == UIInterfaceOrientationLandscapeLeft || interfaceOrientation == UIInterfaceOrientationLandscapeRight);
-}
-
-#pragma mark Table View datasource and delegate methods
-
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
-{
-    return 1;
-}
-
-- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
-{
-    return [cardsInHand count];
-}
-
-- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    static NSString *CellIdentifier = @"Cell";
-    
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
-    if (cell == nil) {
-        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil] ;
-    }
-    
-    ActorObject *temp = [cardsInHand objectAtIndex:indexPath.row];
-    
-    UILabel *actorNameLbl = [[UILabel alloc] initWithFrame:CGRectMake(3, 0, 75, 30)];
-    actorNameLbl.text = temp.actorName;
-    //UIFont *font = [UIFont fontWithName:@"DINEngschrift-Alternate" size:8.0];
-    
-    actorNameLbl.font = [UIFont fontWithName:@"DINEngschrift-Alternate" size:13];
-    actorNameLbl.numberOfLines = 0;
-    //actorNameLbl.textAlignment = UITextAlignmentCenter;
-    actorNameLbl.backgroundColor = [UIColor clearColor];
-    actorNameLbl.textColor = [UIColor whiteColor];
-    
-    if(selectedRow == indexPath.row)
-    {
-        actorNameLbl.font = [UIFont fontWithName:@"DINEngschrift-Alternate" size:12];
-        actorNameLbl.textColor = [UIColor yellowColor];
-        selectedRow = -1;
-    }
-    
-    UIImageView *bg = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 80, 33)];
-    bg.image = [UIImage imageNamed:@"left_nav_button_02.png"];
-    
-    [cell.contentView addSubview:bg];
-    [cell.contentView addSubview:actorNameLbl];
-    cell.contentView.backgroundColor = [UIColor colorWithPatternImage:[UIImage imageNamed:@"left_nav_button_02.png"]];
-    
-    cell.selectionStyle = UITableViewCellSelectionStyleNone;
-    
-    return cell;
-}
-
-
-- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    return 33;
-}
-
-- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    //card selection
-    selectedRow = indexPath.row;
-    
-    [actorTable reloadData];
 }
 
 #pragma mark Alert View delegate

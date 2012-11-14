@@ -10,6 +10,8 @@
 #import "AppDelegate.h"
 #import <QuartzCore/QuartzCore.h>
 #import "ActorObject.h"
+#import "LoadingScreenViewController.h"
+
 @interface LoginScreenViewController ()
 
 @end
@@ -29,6 +31,20 @@
 {
     [super viewDidLoad];
 	// Do any additional setup after loading the view.
+    
+    NSLog(@"view loaded");
+    
+    UIImageView *bg = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 480, 320)];
+    bg.image = [UIImage imageNamed:@"login.png"];
+    
+    UIButton *loginViaFB = [UIButton buttonWithType:UIButtonTypeCustom];
+    loginViaFB.frame = CGRectMake(54, 239, 194, 30);
+    [loginViaFB addTarget:self action:@selector(loginViaFBClicked) forControlEvents:UIControlEventTouchUpInside];
+    
+    UIButton *loginViaMail = [UIButton buttonWithType:UIButtonTypeCustom];
+    loginViaMail.frame = CGRectMake(259, 239, 194, 30);
+    [loginViaMail addTarget:self action:@selector(loginViaMailClicked) forControlEvents:UIControlEventTouchUpInside];
+    
     AppDelegate *appDelegate = [[UIApplication sharedApplication] delegate];
     
     ActorObject *tempActor = [[appDelegate all52Cards] objectForKey:[NSNumber numberWithInteger:101]];
@@ -38,7 +54,31 @@
     //tempActor.actorImageView.backgroundColor = [UIColor redColor];
     
     //[self.view addSubview: tempActor.actorImageView];
+    
+    if (appDelegate.deviceType == IPAD)
+    {
+        bg.frame = CGRectMake(0, 0, 1024, 768);
+        loginViaFB.frame = CGRectMake(114, 573, 411, 71);
+        loginViaMail.frame = CGRectMake(552, 573, 415, 71);
+    }
+    
+    [self.view addSubview: bg];
+    [self.view addSubview: loginViaMail];
+    [self.view addSubview: loginViaFB];
 }
+
+
+- (void) loginViaMailClicked
+{
+    [self.navigationController pushViewController:[[LoadingScreenViewController alloc] init] animated:YES];
+}
+
+
+- (void) loginViaFBClicked
+{
+    [self.navigationController pushViewController:[[LoadingScreenViewController alloc] init] animated:YES];
+}
+
 
 - (void)viewDidUnload
 {
@@ -49,27 +89,6 @@
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
 {
     return (interfaceOrientation == UIInterfaceOrientationLandscapeLeft || interfaceOrientation == UIInterfaceOrientationLandscapeRight);
-}
-
-- (NSUInteger)supportedInterfaceOrientations
-{
-    return UIInterfaceOrientationMaskLandscape; 
-}
-
-- (BOOL)shouldAutorotate
-{
-    if([[UIDevice currentDevice] orientation] == UIInterfaceOrientationMaskLandscape)
-    {
-        return YES;
-    }else
-    {
-        return NO;
-    }
-}
-
-- (UIInterfaceOrientation)preferredInterfaceOrientationForPresentation
-{
-    return UIInterfaceOrientationLandscapeLeft;
 }
 
 @end

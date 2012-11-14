@@ -39,5 +39,6 @@
 - (void) authenticationChanged;
 - (void) findMatchWithMinPlayers:(int)minPlayers maxPlayers:(int)maxPlayers gameType:(int)gameType viewController:(UIViewController *)viewController;
 - (BOOL) isMyTurnforMatch: (GKTurnBasedMatch *)match;
+- (BOOL) isLocalPlayerAuthenticated;
 
 @end
