@@ -32,7 +32,7 @@
 #define REEL_HEIGHT_TAB 241
 #define HAND_SCALE_FACTOR_TAB 1.1
 
-#define INITIAL_HAND_COUNT 2
+#define INITIAL_HAND_COUNT 5
 
 #define TIMEOUT_INTERVAL 90
 
@@ -1021,7 +1021,7 @@
             participant.matchOutcome = GKTurnBasedMatchOutcomeWon;
         }
         
-        currentMatch.currentParticipant.matchOutcome = GKTurnBasedMatchOutcomeLost;
+        currentMatch.currentParticipant.matchOutcome = GKTurnBasedMatchOutcomeQuit;
         
         [currentMatch endMatchInTurnWithMatchData:currentMatchData completionHandler:^(NSError *error)
          {
@@ -1069,7 +1069,7 @@
 - (BOOL) validateMovieTitle:(NSString *)title withActor1:(NSInteger)actorId1 andActor2:(NSInteger)actorId2
 {
     NSLog(@"%@, %d, %d", title, actorId1, actorId2);
-    return true;
+    //return true;
     
     NSMutableString *str = [[NSMutableString alloc] init];
     [str setString: [NSString stringWithFormat:
@@ -1250,6 +1250,15 @@
         
         [currentMatchObj.playersList setObject:myPlayer forKey:myPlayer.playerId];
         
+        for (GKTurnBasedParticipant *participant in match.participants)
+        {
+            //obtaining game data
+            if (![participant.playerID isEqualToString:[[GKLocalPlayer localPlayer] playerID]])
+            {
+                otherPlayer = [currentMatchObj.playersList objectForKey:participant.playerID];
+            }
+        }
+        
         NSMutableData *currentMatchData = [[NSMutableData alloc] initWithData:
                                            [NSKeyedArchiver archivedDataWithRootObject:currentMatchObj]];
         
@@ -1301,7 +1310,7 @@
                      {
                          NSLog(@"%@", error);
                      }
-                     
+                     NSLog(@"%d, %d", match.status, GKTurnBasedMatchStatusEnded);
                      [self layoutMatch: match];
                 }];
             }
@@ -1314,10 +1323,16 @@
             [cardsInHand addObject:[appDelegate.all52Cards objectForKey:tempActorId]];
         }
         
-        if (match.status == GKTurnBasedMatchStatusOpen)
+        if (otherPlayer.playerStatus != PLAYER_QUIT)
         {
             UIAlertView *av = [[UIAlertView alloc] initWithTitle: @"Game Alert !" message: @"Your Turn..."
                                                         delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
+            [av show];
+        }else
+        {
+            UIAlertView *av = [[UIAlertView alloc] initWithTitle: @"Game Alert !" message: @"The other player quit. You are the winner..."
+                                                        delegate:self cancelButtonTitle:@"Sweet!" otherButtonTitles:nil];
+            av.tag = 1;
             [av show];
         }
     }
@@ -1367,15 +1382,10 @@
         [cardsOnReel addObject: [appDelegate.all52Cards objectForKey: [NSNumber numberWithInteger:currentMatchObj.lastActorCast]]];
     }
     
-    if (match.status == GKTurnBasedMatchStatusEnded)
+    if (match.status == GKTurnBasedMatchStatusEnded || otherPlayer.playerStatus == PLAYER_QUIT)
     {
         if (otherPlayer.playerStatus == PLAYER_QUIT)
         {
-            UIAlertView *av = [[UIAlertView alloc] initWithTitle: @"Game Alert !" message: @"The other player quit. You are the winner..."
-                                                        delegate:self cancelButtonTitle:@"Sweet!" otherButtonTitles:nil];
-            av.tag = 1;
-            [av show];
-            
             if (match.status != GKTurnBasedMatchStatusEnded) //other player quit out of turn
             {
                 myPlayer.playerStatus = PLAYER_WON;
@@ -1401,18 +1411,14 @@
                 }];
                 
             }
-        }else //called from receiveEndGame (the other player has won or quit in turn from inside the viewcontroller)
-        {
-            UIAlertView *av = [[UIAlertView alloc] initWithTitle: @"Game Alert !" message: @"You lost!!!" delegate:self cancelButtonTitle:@"Fight another day..." otherButtonTitles:nil];
-            av.delegate = self;
-            av.tag = 1;
-            [av show];
         }
         
         turnIndicator.text = @"Match Ended";
+        
     }else if ([match.currentParticipant.playerID isEqualToString: myPlayer.playerId])
     {
         turnIndicator.text = @"Your Turn";
+        
     }else
     {
         turnIndicator.text = @"Opponent's Turn";
@@ -1443,6 +1449,30 @@
 -(void)receiveEndGame:(GKTurnBasedMatch *)match
 {
     NSLog(@"%d", match.status);
+    
+    for(GKTurnBasedParticipant *participant in match.participants)
+    {
+        if (![participant.playerID isEqualToString:[[GKLocalPlayer localPlayer] playerID]])
+        {
+            if (participant.matchOutcome == GKTurnBasedMatchOutcomeQuit)
+            {
+                //you won
+                
+                UIAlertView *av = [[UIAlertView alloc] initWithTitle: @"Game Alert !" message: @"The other player quit. You are the winner..."
+                                                            delegate:self cancelButtonTitle:@"Sweet!" otherButtonTitles:nil];
+                av.tag = 1;
+                [av show];
+                
+            }else
+            {
+                //you lost
+                
+                UIAlertView *av = [[UIAlertView alloc] initWithTitle: @"Game Alert !" message: @"You lost!!!" delegate:self cancelButtonTitle:@"Fight another day..." otherButtonTitles:nil];
+                av.tag = 1;
+                [av show];
+            }
+        }
+    }
     
     [self layoutMatch:match];
     

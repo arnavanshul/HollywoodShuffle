@@ -252,8 +252,12 @@ static GCTurnBasedMatchHelper *sharedHelper = nil;
         NSLog(@"Existing match");
         if ([match.currentParticipant.playerID isEqualToString:[GKLocalPlayer localPlayer].playerID])
         {
-            NSLog(@"%@", delegate);
             [delegate takeTurn:match];
+            
+        }else if (match.status == GKTurnBasedMatchStatusEnded)
+        {
+            [delegate receiveEndGame:match];
+            
         }else
         {
             [delegate layoutMatch:match];
@@ -322,7 +326,7 @@ static GCTurnBasedMatchHelper *sharedHelper = nil;
 
 -(void)handleTurnEventForMatch:(GKTurnBasedMatch *)match
 {
-    NSLog(@"Turn has happened");
+    NSLog(@"Turn has happened old delegate");
     
     if ([match.matchID isEqualToString:currentMatch.matchID])
     {
@@ -353,7 +357,7 @@ static GCTurnBasedMatchHelper *sharedHelper = nil;
 
 -(void)handleTurnEventForMatch:(GKTurnBasedMatch *)match didBecomeActive:(BOOL)didBecomeActive
 {
-    NSLog(@"%@", match.participants);
+    NSLog(@"new delegate %@", match.participants);
     
     if ([match.matchID isEqualToString:currentMatch.matchID])
     {
