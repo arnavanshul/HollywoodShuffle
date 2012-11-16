@@ -24,6 +24,7 @@ static GCTurnBasedMatchHelper *sharedHelper = nil;
     {
         sharedHelper = [[GCTurnBasedMatchHelper alloc] init];
     }
+    
     return sharedHelper;
 }
 
@@ -141,6 +142,25 @@ static GCTurnBasedMatchHelper *sharedHelper = nil;
     {
         setGKEventHandlerDelegate(nil);
     }
+}
+
+- (void) clearFinishedMatches
+{
+    [GKTurnBasedMatch loadMatchesWithCompletionHandler:^(NSArray *matches, NSError *error)
+     {
+         for (GKTurnBasedMatch *match in matches)
+         {
+             if (match.status == GKTurnBasedMatchStatusEnded)
+             {
+                 [match removeWithCompletionHandler:^(NSError *error) {
+                     if(error)
+                     {
+                         NSLog(@"%@", error);
+                     }
+                 }];
+             }
+         }
+     }];
 }
 
 - (void)findMatchWithMinPlayers:(int)minPlayers maxPlayers:(int)maxPlayers gameType:(int)gameType viewController:(UIViewController *)viewController
@@ -285,9 +305,9 @@ static GCTurnBasedMatchHelper *sharedHelper = nil;
             break;
         }
     }
-    NSLog(@"playerquitforMatch, %@, %@", match, match.currentParticipant);
+    
     [match participantQuitInTurnWithOutcome: GKTurnBasedMatchOutcomeQuit nextParticipant:part matchData:match.matchData completionHandler:nil];
-    [match participantQuitOutOfTurnWithOutcome:GKTurnBasedMatchOutcomeQuit withCompletionHandler:nil];
+    //[match participantQuitOutOfTurnWithOutcome:GKTurnBasedMatchOutcomeQuit withCompletionHandler:nil];
 }
 
 
@@ -300,11 +320,9 @@ static GCTurnBasedMatchHelper *sharedHelper = nil;
     NSLog(@"new invite");
 }
 
--(void)handleTurnEventForMatch:(GKTurnBasedMatch *)match {
+-(void)handleTurnEventForMatch:(GKTurnBasedMatch *)match
+{
     NSLog(@"Turn has happened");
-    
-    UIAlertView *ignoreDoubleTap = [[UIAlertView alloc] initWithTitle:@"Your turn now!!" message:nil delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-    [ignoreDoubleTap show];
     
     if ([match.matchID isEqualToString:currentMatch.matchID])
     {
@@ -335,9 +353,6 @@ static GCTurnBasedMatchHelper *sharedHelper = nil;
 
 -(void)handleTurnEventForMatch:(GKTurnBasedMatch *)match didBecomeActive:(BOOL)didBecomeActive
 {
-    UIAlertView *ignoreDoubleTap = [[UIAlertView alloc] initWithTitle:@"Your turn now!!" message:nil delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-    [ignoreDoubleTap show];
-    
     NSLog(@"%@", match.participants);
     
     if ([match.matchID isEqualToString:currentMatch.matchID])

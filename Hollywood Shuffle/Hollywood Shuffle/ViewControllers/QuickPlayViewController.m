@@ -32,6 +32,8 @@
 #define REEL_HEIGHT_TAB 241
 #define HAND_SCALE_FACTOR_TAB 1.1
 
+#define INITIAL_HAND_COUNT 2
+
 #define TIMEOUT_INTERVAL 90
 
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
@@ -459,7 +461,6 @@
     for (int i = 0; i < [cardsInHand count]; i++)
     {
         ActorObject *temp = [cardsInHand objectAtIndex: i];
-        NSLog(@"card in hand object actor id %d",temp.actorId);
         UIImageView *view = temp.actorImageView;
         view.frame = CGRectMake(i * tempWidth, 0, tempWidth, CARD_HEIGHT * HAND_SCALE_FACTOR);
         [handCardListView addSubview: view];
@@ -467,6 +468,8 @@
     }
 
     handCardListView.contentSize = CGSizeMake(([cardsInHand count]) * tempWidth, CARD_HEIGHT);
+    NSLog(@"%d", [cardsInHand count]);
+    NSLog(@"%.2f", handCardListView.contentSize.width);
     
     //EMPTYING THE REEL SCROLLVIEW
     for (UIView *view in [filmReelListView subviews])
@@ -539,6 +542,7 @@
         castButton.enabled = true;
     }
     //---------------------------------------------------------------------------------------------------------------------------------------------------
+    
 }
 
 
@@ -815,12 +819,8 @@
                     }
                 }];
                 
-                for (GKTurnBasedParticipant *participant in match.participants)
-                {
-                    NSLog(@"%@ = %d", participant.playerID, participant.status);
-                }
-                
                 turnIndicator.text = @"Match Ended";
+                
                 UIAlertView *av = [[UIAlertView alloc] initWithTitle: @"Game Alert !" message: @"You Won!!!" delegate:self cancelButtonTitle:@"Sweet!" otherButtonTitles:nil];
                 av.tag = 1;
                 [av show];
@@ -834,12 +834,7 @@
             otherCardCount.text = [NSString stringWithFormat:@"%d cards", [otherPlayer.playerCardList count]];
             otherPointCount.text = [NSString stringWithFormat:@"%d points", otherPlayer.playerPoints];
             
-        }else
-        {
-            
         }
-        
-        //actorNameLabel.text = @"";
         
         [self layoutHand];
         
@@ -947,18 +942,10 @@
                 }
                 
                 turnIndicator.text = @"Opponent's Turn";
-                NSLog(@"Send Turn, %@, %@", currentMatchData, nextParticipant);
                 
                 myCardCount.text = [NSString stringWithFormat:@"%d cards", [myPlayer.playerCardList count]];
             }
         }
-    }else
-    {
-        /*
-        UIAlertView *av = [[UIAlertView alloc] initWithTitle:nil message: @"Its not your turn..."
-                                                    delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
-        [av show];
-         */
     }
 }
 
@@ -1040,12 +1027,8 @@
          {
              if (error)
              {
-                 //Have to look at it.... might be something due to scores not being reported to the game center leaderboard.
-                 
                  NSLog(@"completion handler %@", error);
              }
-             
-             NSLog(@"completion handler state of the match = %d", currentMatch.status);
              
              [currentMatch removeWithCompletionHandler:^(NSError *error)
               {
@@ -1054,43 +1037,6 @@
                   [self.navigationController popViewControllerAnimated:YES];
               }];
          }];
-        
-        /*
-        if([currentMatch respondsToSelector:@selector(endTurnWithNextParticipants:turnTimeout:matchData:completionHandler:)])
-        {
-            [currentMatch endTurnWithNextParticipants:[NSArray arrayWithObject:nextParticipant] turnTimeout:TIMEOUT_INTERVAL matchData:currentMatchData completionHandler:^(NSError *error) {
-                if (error)
-                {
-                    NSLog(@"%@", error);
-                }else
-                {
-                    [currentMatch removeWithCompletionHandler:^(NSError *error)
-                     {
-                         NSLog(@"%@", error);
-                         
-                         [self.navigationController popViewControllerAnimated:YES];
-                     }];
-                }
-            }];
-        }else
-        {
-            [currentMatch endTurnWithNextParticipant:nextParticipant matchData:currentMatchData completionHandler:^(NSError *error)
-             {
-                 if (error)
-                 {
-                     NSLog(@"%@", error);
-                     
-                     [currentMatch removeWithCompletionHandler:^(NSError *error)
-                      {
-                          NSLog(@"%@", error.localizedDescription);
-                          
-                          [self.navigationController popViewControllerAnimated:YES];
-                      }];
-                 }
-             }];
-        }
-        
-        */
         
     }else
     {
@@ -1123,7 +1069,7 @@
 - (BOOL) validateMovieTitle:(NSString *)title withActor1:(NSInteger)actorId1 andActor2:(NSInteger)actorId2
 {
     NSLog(@"%@, %d, %d", title, actorId1, actorId2);
-    //return true;
+    return true;
     
     NSMutableString *str = [[NSMutableString alloc] init];
     [str setString: [NSString stringWithFormat:
@@ -1219,7 +1165,7 @@
         [deckCards setObject:[NSNumber numberWithInteger:i] forKey:[NSNumber numberWithInteger:i]];
     }
     
-    while ([cardsInHand count] < 5)
+    while ([cardsInHand count] < INITIAL_HAND_COUNT)
     {
         int value = (arc4random() % 54) + 101;
         NSLog(@"%d", value);
@@ -1256,16 +1202,6 @@
     [currentMatchObj.playersList setObject:myPlayer forKey:myPlayer.playerId];
     currentMatchObj.deckCardList = deckCards;
     
-    if([[GCTurnBasedMatchHelper sharedInstance] isMyTurnforMatch:match])
-    {
-        castButton.enabled = true;
-        drawButton.enabled = true;
-    }else
-    {
-        castButton.enabled = false;
-        drawButton.enabled = false;
-    }
-    
     // SETTING UP THE REST OF THE VIEW
     
     actorNameLabel.text = currentMatchObj.lastMovieCast;
@@ -1283,34 +1219,14 @@
 -(void)takeTurn:(GKTurnBasedMatch *)match
 {
     NSLog(@"Entering existing game (logged in view controller)...");
-    turnIndicator.text = @"Your Turn";
     
     currentMatchObj = [NSKeyedUnarchiver unarchiveObjectWithData: match.matchData];
     
-    for (GKTurnBasedParticipant *participant in match.participants)
-    {
-        if(participant.matchOutcome == GKTurnBasedMatchOutcomeQuit)
-        {
-            [[currentMatchObj.playersList objectForKey:participant.playerID] setPlayerStatus:PLAYER_QUIT];
-        }
-    }
-    
     deckCards = currentMatchObj.deckCardList;
     
-    if([currentMatchObj.playersList objectForKey: match.currentParticipant.playerID])
+    if (![currentMatchObj.playersList objectForKey:[[GKLocalPlayer localPlayer] playerID]]) // joining player's first turn
     {
-        myPlayer = [currentMatchObj.playersList objectForKey: match.currentParticipant.playerID];
-        
-        [cardsInHand removeAllObjects];
-        
-        for (NSNumber *tempActorId in myPlayer.playerCardList)
-        {
-            [cardsInHand addObject:[appDelegate.all52Cards objectForKey:tempActorId]];
-        }
-        
-    }else //joining player's first turn
-    {
-        while ([cardsInHand count] < 5)
+        while ([cardsInHand count] < INITIAL_HAND_COUNT)
         {
             int value = (arc4random() % 54) + 101;
             if ([deckCards objectForKey:[NSNumber numberWithInt:value]])
@@ -1333,12 +1249,83 @@
         myPlayer.playerPoints = 0;
         
         [currentMatchObj.playersList setObject:myPlayer forKey:myPlayer.playerId];
+        
+        NSMutableData *currentMatchData = [[NSMutableData alloc] initWithData:
+                                           [NSKeyedArchiver archivedDataWithRootObject:currentMatchObj]];
+        
+        if([match respondsToSelector:@selector(endTurnWithNextParticipants:turnTimeout:matchData:completionHandler:)])
+        {
+            [match endTurnWithNextParticipants:[NSArray arrayWithObject:match.currentParticipant] turnTimeout:TIMEOUT_INTERVAL matchData:currentMatchData completionHandler:^(NSError *error) {
+                if (error)
+                {
+                    NSLog(@"%@", error);
+                }
+            }];
+        }else
+        {
+            [match endTurnWithNextParticipant:match.currentParticipant matchData:currentMatchData completionHandler:^(NSError *error)
+             {
+                 if (error)
+                 {
+                     NSLog(@"%@", error);
+                 }
+             }];
+        }
+        
+    }else //other player either quit from outside the viewcontroller or took his turn
+    {
+        for (GKTurnBasedParticipant *participant in match.participants)
+        {
+            //obtaining game data
+            if ([participant.playerID isEqualToString:[[GKLocalPlayer localPlayer] playerID]])
+            {
+                myPlayer = [currentMatchObj.playersList objectForKey:participant.playerID];
+            }else
+            {
+                otherPlayer = [currentMatchObj.playersList objectForKey:participant.playerID];
+            }
+
+            //check if the other participant quit outside the viewcontroller (could be scaled to any number of participants)
+            if(participant.matchOutcome == GKTurnBasedMatchOutcomeQuit)
+            {
+                [[currentMatchObj.playersList objectForKey:participant.playerID] setPlayerStatus:PLAYER_QUIT];
+                
+                match.currentParticipant.matchOutcome = GKTurnBasedMatchOutcomeWon;
+                
+                NSData *currentMatchData = [NSKeyedArchiver archivedDataWithRootObject: currentMatchObj];
+                
+                [match endMatchInTurnWithMatchData:currentMatchData completionHandler:^(NSError *error)
+                 {
+                     NSLog(@"%@", error);
+                     if (error)
+                     {
+                         NSLog(@"%@", error);
+                     }
+                     
+                     [self layoutMatch: match];
+                }];
+            }
+        }
+        
+        [cardsInHand removeAllObjects];
+        
+        for (NSNumber *tempActorId in myPlayer.playerCardList) //adding actor objects to cardsInHand
+        {
+            [cardsInHand addObject:[appDelegate.all52Cards objectForKey:tempActorId]];
+        }
+        
+        if (match.status == GKTurnBasedMatchStatusOpen)
+        {
+            UIAlertView *av = [[UIAlertView alloc] initWithTitle: @"Game Alert !" message: @"Your Turn..."
+                                                        delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
+            [av show];
+        }
     }
     
     [cardsOnReel removeAllObjects];
     [cardsOnReel addObject:[appDelegate.all52Cards objectForKey:[NSNumber numberWithInteger: currentMatchObj.lastActorCast]]];
     
-    actorNameLabel.text = currentMatchObj.lastMovieCast;
+    // Not needed here but could be of use if more than two players are playing
     
     if([[GCTurnBasedMatchHelper sharedInstance] isMyTurnforMatch:match])
     {
@@ -1350,165 +1337,88 @@
         drawButton.enabled = false;
     }
     
-    for (NSString *playerId in [currentMatchObj.playersList allKeys])
-    {
-        if (![playerId isEqualToString: myPlayer.playerId])
-        {
-            otherPlayer = [currentMatchObj.playersList objectForKey:playerId];
-            
-            if (otherPlayer.playerStatus == PLAYER_QUIT)
-            {
-                UIAlertView *av = [[UIAlertView alloc] initWithTitle: @"Game Alert !" message: @"The other player quit. You are the winner..."
-                                                            delegate:self cancelButtonTitle:@"Sweet!" otherButtonTitles:nil];
-                av.delegate = self;
-                av.tag = 1;
-                [av show];
-                
-                [myPlayer setPlayerStatus: PLAYER_WON];
-                
-                NSLog(@"%@", match.currentParticipant.playerID);
-                NSLog(@"%@", myPlayer.playerId);
-                
-                NSMutableData *currentMatchData = [[NSMutableData alloc] initWithData:
-                                                   [NSKeyedArchiver archivedDataWithRootObject:currentMatchObj]];
-                
-                
-                //Set the match outcome for all the participants...
-                for(GKTurnBasedParticipant *participant in match.participants)
-                {
-                    participant.matchOutcome = GKTurnBasedMatchOutcomeLost;
-                }
-                
-                match.currentParticipant.matchOutcome = GKTurnBasedMatchOutcomeWon;
-                
-                [match endMatchInTurnWithMatchData:currentMatchData completionHandler:^(NSError *error)
-                {
-                    if (error)
-                    {
-                        NSLog(@"completion handler %@", error);
-                    }
-                    
-                    NSLog(@"completion handler state of the match = %d", match.status);
-                }];
-                
-                NSLog(@"state of the match = %d", match.status);
-                
-            }else if (otherPlayer.playerStatus == PLAYER_WON)
-            {
-                UIAlertView *av = [[UIAlertView alloc] initWithTitle: @"Game Alert !" message: @"You lost!!!" delegate:self cancelButtonTitle:@"Fight another day..." otherButtonTitles:nil];
-                av.delegate = self;
-                av.tag = 1;
-                [av show];
-                
-                [myPlayer setPlayerStatus: PLAYER_LOST];
-                
-                NSLog(@"%@", match.currentParticipant.playerID);
-                NSLog(@"%@", myPlayer.playerId);
-                
-                NSMutableData *currentMatchData = [[NSMutableData alloc] initWithData:
-                                                   [NSKeyedArchiver archivedDataWithRootObject:currentMatchObj]];
-                
-                for(GKTurnBasedParticipant *participant in match.participants)
-                {
-                    if (![participant.playerID isEqualToString:otherPlayer.playerId])
-                    {
-                        participant.matchOutcome = GKTurnBasedMatchOutcomeLost;
-                    }else
-                    {
-                        participant.matchOutcome = GKTurnBasedMatchOutcomeWon;
-                    }
-                }
-                
-                [match endMatchInTurnWithMatchData:currentMatchData completionHandler:^(NSError *error)
-                 {
-                     if (error)
-                     {
-                         //Have to look at it.... might be something due to scores not being reported to the game center leaderboard.
-                         
-                         NSLog(@"completion handler %@", error);
-                     }
-                     
-                     NSLog(@"completion handler state of the match = %d", match.status);
-                 }];
-            }
-        }
-    }
-    
-    // SETTING UP THE REST OF THE VIEW
-    
-    actorNameLabel.text = currentMatchObj.lastMovieCast;
-    
-    myCardCount.text = [NSString stringWithFormat:@"%d cards", [myPlayer.playerCardList count]];
-    myPointCount.text = [NSString stringWithFormat:@"%d points", myPlayer.playerPoints];
-    
-    otherCardCount.text = [NSString stringWithFormat:@"%d cards", [otherPlayer.playerCardList count]];
-    otherPointCount.text = [NSString stringWithFormat:@"%d points", otherPlayer.playerPoints];
-    
-    [self layoutHand];
+    [self layoutMatch: match];
 }
 
 
 -(void)layoutMatch:(GKTurnBasedMatch *)match
 {
-    NSLog(@"Viewing match where it's not our turn...");
-    
-    currentMatchObj = [NSKeyedUnarchiver unarchiveObjectWithData: match.matchData];
-    
-    myPlayer = [currentMatchObj.playersList objectForKey:[[GKLocalPlayer localPlayer] playerID]];
-    
-    for (NSString *playerId in [currentMatchObj.playersList allKeys])
+    if (![match.currentParticipant.playerID isEqualToString:[[GKLocalPlayer localPlayer] playerID]]) // if this is not our turn and the method is called directly, gather game data from match object
     {
-        if (![playerId isEqualToString: myPlayer.playerId])
+        currentMatchObj = [NSKeyedUnarchiver unarchiveObjectWithData: match.matchData];
+        
+        myPlayer = [currentMatchObj.playersList objectForKey:[[GKLocalPlayer localPlayer] playerID]];
+        
+        for (NSString *playerId in [currentMatchObj.playersList allKeys])
         {
-            otherPlayer = [currentMatchObj.playersList objectForKey:playerId];
-            
-            if (otherPlayer.playerStatus == PLAYER_QUIT)
+            if (![playerId isEqualToString: myPlayer.playerId])
             {
-                UIAlertView *av = [[UIAlertView alloc] initWithTitle: @"Game Alert !" message: @"The other player quit. You are the winner..."
-                                                            delegate:self cancelButtonTitle:@"Sweet!" otherButtonTitles:nil];
-                av.tag = 1;
-                [av show];
-                
-                [myPlayer setPlayerStatus: PLAYER_WON];
-                
-                //[match participantQuitInTurnWithOutcome:GKTurnBasedMatchOutcomeWon nextParticipant:nil matchData:match.matchData completionHandler:nil];
+                otherPlayer = [currentMatchObj.playersList objectForKey:playerId];
             }
         }
+        
+        [cardsInHand removeAllObjects];
+        for (NSNumber *key in myPlayer.playerCardList)
+        {
+            [cardsInHand addObject: [appDelegate.all52Cards objectForKey:key]];
+        }
+        
+        [cardsOnReel removeAllObjects];
+        [cardsOnReel addObject: [appDelegate.all52Cards objectForKey: [NSNumber numberWithInteger:currentMatchObj.lastActorCast]]];
     }
-    
-    //for (NSNumber *key in [myPlayer.playerCardList allKeys])
-    for (NSNumber *key in myPlayer.playerCardList)
-    {
-        [cardsInHand addObject: [appDelegate.all52Cards objectForKey:key]];
-    }
-    
-    [cardsOnReel addObject: [appDelegate.all52Cards objectForKey: [NSNumber numberWithInteger:currentMatchObj.lastActorCast]]];
-    deckCards = currentMatchObj.deckCardList;
     
     if (match.status == GKTurnBasedMatchStatusEnded)
     {
-        turnIndicator.text = @"Match Ended";
-        
-        UIAlertView *av;
-        
-        /*
-        if(myPlayer.playerStatus == PLAYER_WON)
+        if (otherPlayer.playerStatus == PLAYER_QUIT)
         {
-            av = [[UIAlertView alloc] initWithTitle: @"Game Alert !" message: @"You Won!!!" delegate:self cancelButtonTitle:@"Sweet!" otherButtonTitles:nil];
-        }else
+            UIAlertView *av = [[UIAlertView alloc] initWithTitle: @"Game Alert !" message: @"The other player quit. You are the winner..."
+                                                        delegate:self cancelButtonTitle:@"Sweet!" otherButtonTitles:nil];
+            av.tag = 1;
+            [av show];
+            
+            if (match.status != GKTurnBasedMatchStatusEnded) //other player quit out of turn
+            {
+                myPlayer.playerStatus = PLAYER_WON;
+                
+                match.currentParticipant.matchOutcome = GKTurnBasedMatchOutcomeWon;
+                
+                NSData *currentMatchData = [NSKeyedArchiver archivedDataWithRootObject:currentMatchObj];
+                
+                [match endMatchInTurnWithMatchData: currentMatchData completionHandler:^(NSError *error) {
+                    if (error)
+                    {
+                        NSLog(@"error ending match: %@", error);
+                    }else
+                    {
+                        [match removeWithCompletionHandler:^(NSError *error)
+                         {
+                             if(error)
+                             {
+                                 NSLog(@"error removing match: %@", error);
+                             }
+                         }];
+                    }
+                }];
+                
+            }
+        }else //called from receiveEndGame (the other player has won or quit in turn from inside the viewcontroller)
         {
-            av = [[UIAlertView alloc] initWithTitle: @"Game Alert !" message: @"You lost!!!" delegate:self cancelButtonTitle:@"Fight another day..." otherButtonTitles:nil];
+            UIAlertView *av = [[UIAlertView alloc] initWithTitle: @"Game Alert !" message: @"You lost!!!" delegate:self cancelButtonTitle:@"Fight another day..." otherButtonTitles:nil];
+            av.delegate = self;
+            av.tag = 1;
+            [av show];
         }
-         */
         
-        av.tag = 1;
-        [av show];
-        
-    } else
+        turnIndicator.text = @"Match Ended";
+    }else if ([match.currentParticipant.playerID isEqualToString: myPlayer.playerId])
     {
-        NSLog(@"%@",turnIndicator);
+        turnIndicator.text = @"Your Turn";
+    }else
+    {
         turnIndicator.text = @"Opponent's Turn";
     }
+    
+    deckCards = currentMatchObj.deckCardList;
     
     // SETTING UP THE REST OF THE VIEW
     
@@ -1534,30 +1444,15 @@
 {
     NSLog(@"%d", match.status);
     
-    NSMutableString *str = [[NSMutableString alloc] init];
-    for (GKTurnBasedParticipant *participant in match.participants)
-    {
-        NSLog(@"%@ = %d", participant.playerID, participant.status);
-        [str appendString:[NSString stringWithFormat:@"%@ = %d \n", participant.playerID, participant.status]];
-    }
-    
-    [match removeWithCompletionHandler:^(NSError *error) {
-        NSLog(@"%@ \n %@", error, [error localizedDescription]);
-    }];
-    
-    NSLog(@"%@", str);
-    
-    // SETTING UP THE REST OF THE VIEW
-    
-    actorNameLabel.text = currentMatchObj.lastMovieCast;
-    
-    myCardCount.text = [NSString stringWithFormat:@"%d cards", [myPlayer.playerCardList count]];
-    myPointCount.text = [NSString stringWithFormat:@"%d points", myPlayer.playerPoints];
-    
-    otherCardCount.text = [NSString stringWithFormat:@"%d cards", [otherPlayer.playerCardList count]];
-    otherPointCount.text = [NSString stringWithFormat:@"%d points", otherPlayer.playerPoints];
-    
     [self layoutMatch:match];
+    
+    [match removeWithCompletionHandler:^(NSError *error)
+    {
+        if (error)
+        {
+            NSLog(@"%@", error);
+        }
+    }];
 }
 
 

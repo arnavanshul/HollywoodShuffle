@@ -109,6 +109,9 @@
 - (void) quickPlayClicked
 {
     NSLog(@"quickplayclicked");
+    
+    [[GCTurnBasedMatchHelper sharedInstance] clearFinishedMatches];
+    
     [[GCTurnBasedMatchHelper sharedInstance] findMatchWithMinPlayers:2 maxPlayers:2 gameType:1 viewController:self];
     
     //[[GCRealTimeMatchHelper sharedInstance] findMatchWithMinPlayers:2 maxPlayers:2 viewController:self delegate:self];
