@@ -120,20 +120,22 @@
 {
     NSData *data = [NSData dataWithContentsOfURL:[NSURL URLWithString:@"http://tblr.asu.edu/hollywoodshuffle/actors.php"]];
     
-    NSMutableDictionary *tempDict = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:nil];
-    
-    if ([[tempDict objectForKey:@"success"] integerValue] == 1)
-    {
-        NSArray *tempActorArray = [tempDict objectForKey:@"actorlist"];
+    if (data) {
+        NSMutableDictionary *tempDict = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:nil];
         
-        for (NSDictionary *actorDict in tempActorArray)
+        if ([[tempDict objectForKey:@"success"] integerValue] == 1)
         {
-            ActorObject *tempActor = [[ActorObject alloc] init];
-            tempActor.actorId = [[actorDict objectForKey:@"actor_id"] integerValue];
-            [tempActor.actorName setString: [actorDict objectForKey:@"actor_name"]];
-            tempActor.actorImageView.image = [UIImage imageNamed:[NSString stringWithFormat:@"%d.jpg", tempActor.actorId]];
+            NSArray *tempActorArray = [tempDict objectForKey:@"actorlist"];
             
-            [all52Cards setObject:tempActor forKey:[NSNumber numberWithInteger: tempActor.actorId]];
+            for (NSDictionary *actorDict in tempActorArray)
+            {
+                ActorObject *tempActor = [[ActorObject alloc] init];
+                tempActor.actorId = [[actorDict objectForKey:@"actor_id"] integerValue];
+                [tempActor.actorName setString: [actorDict objectForKey:@"actor_name"]];
+                tempActor.actorImageView.image = [UIImage imageNamed:[NSString stringWithFormat:@"%d.jpg", tempActor.actorId]];
+                
+                [all52Cards setObject:tempActor forKey:[NSNumber numberWithInteger: tempActor.actorId]];
+            }
         }
     }
 }
